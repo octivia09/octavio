@@ -1,38 +1,41 @@
 import streamlit as st
+import csv
+import os
 from datetime import datetime
 
-# Título da aplicação
+# Configuração da página
 st.set_page_config(page_title="Formulário de Cadastro", page_icon="📝", layout="centered")
 st.title("📋 Formulário de Cadastro")
 
-st.markdown("Preencha os dados abaixo e clique em **ENVIAR** para salvar suas informações.")
+st.markdown("Preencha os dados abaixo e clique em **ENVIAR** para salvar suas informações em CSV.")
 
-# Formulário com UX amigável
+# Caminho do arquivo CSV
+csv_file = "registros_usuarios.csv"
+
+# Cabeçalho do CSV (caso ainda não exista)
+if not os.path.isfile(csv_file):
+    with open(csv_file, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Data", "Nome", "Idade", "Time"])
+
+# Formulário
 with st.form("formulario_usuario"):
     nome = st.text_input("Nome completo")
     idade = st.number_input("Idade", min_value=0, max_value=120, step=1)
-    
     times = ["Flamengo", "Corinthians", "Palmeiras", "Outro"]
     time_futebol = st.selectbox("Time de Futebol", options=times)
 
-    # Botão de envio
     enviado = st.form_submit_button("ENVIAR")
 
     if enviado:
         if nome.strip() == "":
             st.warning("⚠️ Por favor, preencha seu nome.")
         else:
-            # Formata os dados
-            data = f"""
-==== Novo Registro ====
-Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Nome: {nome}
-Idade: {idade}
-Time: {time_futebol}
-=========================
-"""
-            # Salva os dados em um arquivo texto
-            with open("registros_usuarios.txt", "a", encoding="utf-8") as f:
-                f.write(data)
+            data_atual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            nova_linha = [data_atual, nome, idade, time_futebol]
 
-            st.success("✅ Informações salvas com sucesso!")
+            with open(csv_file, mode="a", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(nova_linha)
+
+            st.success("✅ Dados salvos com sucesso no arquivo CSV!")
