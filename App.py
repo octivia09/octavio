@@ -1,41 +1,50 @@
 import streamlit as st
-import csv
-import os
-from datetime import datetime
+import pandas as pd
+import plotly.express as px
 
-# Configuração da página
-st.set_page_config(page_title="Formulário de Cadastro", page_icon="📝", layout="centered")
-st.title("📋 Formulário de Cadastro")
+# Título do app
+st.set_page_config(page_title="Formulário de Dificuldades", layout="centered")
+st.title("📚 Formulário de Dificuldades Acadêmicas")
 
-st.markdown("Preencha os dados abaixo e clique em **ENVIAR** para salvar suas informações em CSV.")
+st.markdown("Preencha o formulário abaixo para que possamos entender suas dificuldades e ajudar melhor! 💡")
 
-# Caminho do arquivo CSV
-csv_file = "registros_usuarios.csv"
-
-# Cabeçalho do CSV (caso ainda não exista)
-if not os.path.isfile(csv_file):
-    with open(csv_file, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Data", "Nome", "Idade", "Time"])
+# Inicializar sessão para armazenar dados se ainda não existir
+if 'dados' not in st.session_state:
+    st.session_state['dados'] = []
 
 # Formulário
-with st.form("formulario_usuario"):
-    nome = st.text_input("Nome completo")
-    idade = st.number_input("Idade", min_value=0, max_value=120, step=1)
-    times = ["Flamengo", "Corinthians", "Palmeiras", "Outro"]
-    time_futebol = st.selectbox("Time de Futebol", options=times)
-
+with st.form("formulario"):
+    nome = st.text_input("Nome do aluno")
+    contato = st.text_input("Meio de contato (e-mail, telefone, etc.)")
+    materia = st.selectbox("Matéria com dificuldade", ["Matemática", "Física", "Química", "Biologia", "Português", "História", "Geografia", "Outra"])
     enviado = st.form_submit_button("ENVIAR")
 
     if enviado:
-        if nome.strip() == "":
-            st.warning("⚠️ Por favor, preencha seu nome.")
+        if nome and contato:
+            st.session_state['dados'].append({
+                "Nome": nome,
+                "Contato": contato,
+                "Matéria": materia
+            })
+            st.success("Dados enviados com sucesso!")
         else:
-            data_atual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            nova_linha = [data_atual, nome, idade, time_futebol]
+            st.error("Por favor, preencha todos os campos.")
 
-            with open(csv_file, mode="a", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow(nova_linha)
+# Exibir tabela de dados
+if st.session_state['dados']:
+    df = pd.DataFrame(st.session_state['dados'])
+    st.subheader("📋 Dados recebidos")
+    st.dataframe(df, use_container_width=True)
 
-            st.success("✅ Dados salvos com sucesso no arquivo CSV!")
+    # Gráfico de barras com quantitativo por matéria
+    st.subheader("📊 Alunos com dificuldade por matéria")
+    grafico = px.bar(
+        df.groupby("Matéria").size().reset_index(name='Quantidade'),
+        x='Matéria',
+        y='Quantidade',
+        title="Distribuição de dificuldades por matéria",
+        color='Matéria'
+    )
+    st.plotly_chart(grafico, use_container_width=True)
+else:
+    st.info("Nenhum dado enviado ainda. Preencha o formulário acima para começar.")
